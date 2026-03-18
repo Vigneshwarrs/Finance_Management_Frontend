@@ -1,23 +1,33 @@
-import * as React from "react";
-import { ToastProvider, Toast, ToastTitle, ToastDescription, ToastAction } from "@shadcn/ui/toast";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 interface AppToastProps {
   open: boolean;
   title: string;
   description?: string;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
-export function AppToast({ open, title, description, onClose }: AppToastProps) {
-  return (
-    <ToastProvider swipeDirection="right">
-      <Toast open={open} onOpenChange={onClose}>
-        <ToastTitle>{title}</ToastTitle>
-        {description && <ToastDescription>{description}</ToastDescription>}
-        <ToastAction altText="Close" onClick={onClose}>
-          Close
-        </ToastAction>
-      </Toast>
-    </ToastProvider>
-  );
+export function AppToast({
+  open,
+  title,
+  description,
+  onClose,
+}: AppToastProps) {
+  useEffect(() => {
+    if (open) {
+      toast(title, {
+        description,
+        action: onClose
+          ? {
+              label: "Close",
+              onClick: onClose,
+            }
+          : undefined,
+        onDismiss: onClose,
+      });
+    }
+  }, [open, title, description, onClose]);
+
+  return null; // ✅ Sonner does not render UI components here
 }

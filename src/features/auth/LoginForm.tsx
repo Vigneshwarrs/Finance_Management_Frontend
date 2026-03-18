@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
-import { Button } from '@shadcn/ui/button';
+import { Button } from '@/components/ui/button';
 import { useToastStore } from '../../store/toastStore';
 
 const loginSchema = z.object({

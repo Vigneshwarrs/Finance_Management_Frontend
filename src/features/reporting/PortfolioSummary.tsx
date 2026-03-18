@@ -1,12 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/client';
 import { ExportButton } from './ExportButton';
+import KpiCard from '@/components/KpiCard';
 
 export function PortfolioSummary() {
   const { data, isLoading } = useQuery({
     queryKey: ['portfolio'],
     queryFn: () => apiClient.get('/reports/portfolio').then((r) => r.data),
   });
+
+  const reportCards = [
+    { label: 'Active Loans', value: data?.totalActiveLoanCount },
+    { label: 'Total Disbursed', value: data ? `$${data.totalDisbursed.toFixed(2)}` : undefined },
+    { label: 'Outstanding', value: data ? `$${data.totalOutstandingBalance.toFixed(2)}` : undefined },
+    { label: 'Collected', value: data ? `$${data.totalCollected.toFixed(2)}` : undefined },
+  ];
 
   const { data: overdue = [], isLoading: overdueLoading } = useQuery({
     queryKey: ['overdue-report'],
@@ -24,16 +32,8 @@ export function PortfolioSummary() {
 
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Active Loans', value: data.totalActiveLoanCount },
-            { label: 'Total Disbursed', value: `$${data.totalDisbursed?.toFixed(2)}` },
-            { label: 'Outstanding', value: `$${data.totalOutstandingBalance?.toFixed(2)}` },
-            { label: 'Collected', value: `$${data.totalCollected?.toFixed(2)}` },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
-              <p className="text-sm text-gray-500">{label}</p>
-              <p className="text-2xl font-bold">{value}</p>
-            </div>
+          {reportCards.map(({ label, value }) => (
+            <KpiCard key={label} label={label} value={value} />
           ))}
         </div>
       )}

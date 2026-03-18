@@ -7,7 +7,7 @@ import { apiClient } from '../../api/client';
 import { loanSchema, LoanFormData } from './schemas';
 import { setFormErrors } from '../../utils/formErrors';
 import { useToastStore } from '../../store/toastStore';
-import { Button } from '@shadcn/ui/button';
+import { Button } from '@/components/ui/button';
 
 export function LoanForm() {
   const { id } = useParams<{ id: string }>();
