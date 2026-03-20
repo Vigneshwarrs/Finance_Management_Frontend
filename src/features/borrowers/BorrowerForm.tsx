@@ -1,4 +1,3 @@
-
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -9,7 +8,15 @@ import { setFormErrors } from '../../utils/formErrors';
 import { useToastStore } from '../../store/toastStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form';
 
 export function BorrowerForm() {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +31,7 @@ export function BorrowerForm() {
     enabled: isEdit,
   });
 
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<BorrowerFormData>({
+  const form = useForm<BorrowerFormData>({
     resolver: zodResolver(borrowerSchema),
     values: existing,
   });
@@ -41,69 +48,159 @@ export function BorrowerForm() {
     },
     onError: (err: any) => {
       const details = err.response?.data?.details;
-      if (details) setFormErrors(setError, details);
+      if (details) setFormErrors(form.setError, details);
     },
   });
 
   return (
-    <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="max-w-lg space-y-4 bg-surface p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-      <h1 className="text-2xl font-bold text-primary mb-4">{isEdit ? 'Edit Borrower' : 'New Borrower'}</h1>
+    <Card className="max-w-lg">
+      <CardHeader>
+        <CardTitle>{isEdit ? 'Edit Borrower' : 'New Borrower'}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit((d) => mutation.mutate(d))}
+            className="space-y-4"
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <div>
-        <Label htmlFor="name" className="block text-sm font-medium mb-1">Name</Label>
-        <Input id="name" {...register('name')} />
-        {errors.name && <p role="alert" className="text-error text-xs mt-1">{errors.name.message}</p>}
-      </div>
+            <FormField
+              control={form.control}
+              name="identificationNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>ID Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <div>
-        <Label htmlFor="identificationNumber" className="block text-sm font-medium mb-1">ID Number</Label>
-        <Input id="identificationNumber" {...register('identificationNumber')} />
-        {errors.identificationNumber && <p role="alert" className="text-error text-xs mt-1">{errors.identificationNumber.message}</p>}
-      </div>
+            <FormField
+              control={form.control}
+              name="contact.email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <div>
-        <Label htmlFor="email" className="block text-sm font-medium mb-1">Email</Label>
-        <Input id="email" type="email" {...register('contact.email')} />
-        {errors.contact?.email && <p role="alert" className="text-error text-xs mt-1">{errors.contact.email.message}</p>}
-      </div>
+            <FormField
+              control={form.control}
+              name="contact.phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone (optional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <div>
-        <Label htmlFor="phone" className="block text-sm font-medium mb-1">Phone (optional)</Label>
-        <Input id="phone" {...register('contact.phone')} />
-      </div>
+            <div className="grid grid-cols-2 gap-2">
+              <FormField
+                control={form.control}
+                name="address.street"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Street</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <Label htmlFor="street" className="block text-sm font-medium mb-1">Street</Label>
-          <Input id="street" {...register('address.street')} />
-          {errors.address?.street && <p role="alert" className="text-error text-xs mt-1">{errors.address.street.message}</p>}
-        </div>
-        <div>
-          <Label htmlFor="city" className="block text-sm font-medium mb-1">City</Label>
-          <Input id="city" {...register('address.city')} />
-          {errors.address?.city && <p role="alert" className="text-error text-xs mt-1">{errors.address.city.message}</p>}
-        </div>
-        <div>
-          <Label htmlFor="state" className="block text-sm font-medium mb-1">State</Label>
-          <Input id="state" {...register('address.state')} />
-        </div>
-        <div>
-          <Label htmlFor="postalCode" className="block text-sm font-medium mb-1">Postal Code</Label>
-          <Input id="postalCode" {...register('address.postalCode')} />
-        </div>
-        <div>
-          <Label htmlFor="country" className="block text-sm font-medium mb-1">Country</Label>
-          <Input id="country" {...register('address.country')} />
-        </div>
-      </div>
+              <FormField
+                control={form.control}
+                name="address.city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      <Button
-        type="submit"
-        disabled={isSubmitting || mutation.isPending}
-        className="w-full"
-      >
-        {isEdit ? 'Update' : 'Create'}
-      </Button>
-    </form>
+              <FormField
+                control={form.control}
+                name="address.state"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address.postalCode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Postal Code</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="address.country"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Country</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting || mutation.isPending}
+              className="w-full"
+            >
+              {isEdit ? 'Update' : 'Create'}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 }

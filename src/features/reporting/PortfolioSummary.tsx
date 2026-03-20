@@ -2,6 +2,15 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../api/client';
 import { ExportButton } from './ExportButton';
 import KpiCard from '@/components/KpiCard';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function PortfolioSummary() {
   const { data, isLoading } = useQuery({
@@ -11,9 +20,9 @@ export function PortfolioSummary() {
 
   const reportCards = [
     { label: 'Active Loans', value: data?.totalActiveLoanCount },
-    { label: 'Total Disbursed', value: data ? `$${data.totalDisbursed.toFixed(2)}` : undefined },
-    { label: 'Outstanding', value: data ? `$${data.totalOutstandingBalance.toFixed(2)}` : undefined },
-    { label: 'Collected', value: data ? `$${data.totalCollected.toFixed(2)}` : undefined },
+    { label: 'Total Disbursed', value: data ? `₹${data.totalDisbursed.toFixed(2)}` : undefined },
+    { label: 'Outstanding', value: data ? `₹${data.totalOutstandingBalance.toFixed(2)}` : undefined },
+    { label: 'Collected', value: data ? `₹${data.totalCollected.toFixed(2)}` : undefined },
   ];
 
   const { data: overdue = [], isLoading: overdueLoading } = useQuery({
@@ -21,21 +30,27 @@ export function PortfolioSummary() {
     queryFn: () => apiClient.get('/reports/overdue').then((r) => r.data),
   });
 
-  if (isLoading) return <p>Loading...</p>;
-
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold">Reports</h1>
         <ExportButton endpoint="/reports/portfolio/export" filename="portfolio-summary" />
       </div>
 
-      {data && (
+      {isLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {reportCards.map(({ label, value }) => (
-            <KpiCard key={label} label={label} value={value} />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
+      ) : (
+        data && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {reportCards.map(({ label, value }) => (
+              <KpiCard key={label} label={label} value={value} />
+            ))}
+          </div>
+        )
       )}
 
       <div className="flex justify-between items-center">
@@ -43,27 +58,33 @@ export function PortfolioSummary() {
         <ExportButton endpoint="/reports/overdue/export" filename="overdue-report" />
       </div>
 
-      {!overdueLoading && (
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gray-100 dark:bg-gray-700">
-              <th className="text-left p-2">Loan ID</th>
-              <th className="text-left p-2">Borrower</th>
-              <th className="text-left p-2">Overdue Amount</th>
-              <th className="text-left p-2">Days Overdue</th>
-            </tr>
-          </thead>
-          <tbody>
+      {overdueLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full rounded" />
+          ))}
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Loan ID</TableHead>
+              <TableHead>Borrower</TableHead>
+              <TableHead>Overdue Amount</TableHead>
+              <TableHead>Days Overdue</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {overdue.map((e: any) => (
-              <tr key={e.loanId} className="border-b dark:border-gray-700">
-                <td className="p-2 font-mono text-xs">{e.loanId.slice(0, 8)}…</td>
-                <td className="p-2">{e.borrowerName}</td>
-                <td className="p-2">${e.overdueAmount?.toFixed(2)}</td>
-                <td className="p-2">{e.daysOverdue}</td>
-              </tr>
+              <TableRow key={e.loanId}>
+                <TableCell className="font-mono text-xs">{e.loanId.slice(0, 8)}…</TableCell>
+                <TableCell>{e.borrowerName}</TableCell>
+                <TableCell>₹{e.overdueAmount?.toFixed(2)}</TableCell>
+                <TableCell>{e.daysOverdue}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
     </div>
   );

@@ -5,6 +5,26 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../api/client';
 import { useToastStore } from '../../store/toastStore';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '../../components/ui/form';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../../components/ui/table';
+import { Skeleton } from '../../components/ui/skeleton';
 
 const repaymentSchema = z.object({
   loanId: z.string().min(1, 'Loan ID is required'),
@@ -19,9 +39,9 @@ export function RepaymentForm() {
   const qc = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<RepaymentFormData>({
+  const form = useForm<RepaymentFormData>({
     resolver: zodResolver(repaymentSchema),
-    defaultValues: { paymentDate: new Date().toISOString().split('T')[0] },
+    defaultValues: { loanId: '', amount: 0, paymentDate: new Date().toISOString().split('T')[0] },
   });
 
   const mutation = useMutation({
@@ -31,11 +51,11 @@ export function RepaymentForm() {
       qc.invalidateQueries({ queryKey: ['repayments', vars.loanId] });
       addToast('Repayment recorded', 'success');
       setSelectedLoanId(vars.loanId);
-      reset();
+      form.reset();
     },
   });
 
-  const { data: history = [] } = useQuery({
+  const { data: history = [], isLoading: historyLoading } = useQuery({
     queryKey: ['repayments', selectedLoanId],
     queryFn: () => apiClient.get(`/loans/${selectedLoanId}/repayments`).then((r) => r.data),
     enabled: Boolean(selectedLoanId),
@@ -43,49 +63,99 @@ export function RepaymentForm() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold">Record Repayment</h1>
+      <Card className="max-w-sm">
+        <CardHeader>
+          <CardTitle>Record Repayment</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="loanId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Loan ID</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="any" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="paymentDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" disabled={form.formState.isSubmitting || mutation.isPending}>
+                Record
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
 
-      <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="max-w-sm space-y-4">
-        <div>
-          <label htmlFor="loanId" className="block text-sm font-medium mb-1">Loan ID</label>
-          <input id="loanId" {...register('loanId')} className="w-full border rounded px-3 py-2 text-sm" />
-          {errors.loanId && <p role="alert" className="text-red-500 text-xs mt-1">{errors.loanId.message}</p>}
-        </div>
-        <div>
-          <label htmlFor="amount" className="block text-sm font-medium mb-1">Amount</label>
-          <input id="amount" type="number" step="any" {...register('amount')} className="w-full border rounded px-3 py-2 text-sm" />
-          {errors.amount && <p role="alert" className="text-red-500 text-xs mt-1">{errors.amount.message}</p>}
-        </div>
-        <div>
-          <label htmlFor="paymentDate" className="block text-sm font-medium mb-1">Payment Date</label>
-          <input id="paymentDate" type="date" {...register('paymentDate')} className="w-full border rounded px-3 py-2 text-sm" />
-          {errors.paymentDate && <p role="alert" className="text-red-500 text-xs mt-1">{errors.paymentDate.message}</p>}
-        </div>
-        <button type="submit" disabled={isSubmitting || mutation.isPending} className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50">
-          Record
-        </button>
-      </form>
-
-      {selectedLoanId && history.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-2">Repayment History</h2>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-gray-700">
-                <th className="text-left p-2">Date</th>
-                <th className="text-left p-2">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((r: any) => (
-                <tr key={r.id} className="border-b dark:border-gray-700">
-                  <td className="p-2">{r.paymentDate?.split('T')[0]}</td>
-                  <td className="p-2">${r.amount?.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {selectedLoanId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Repayment History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {historyLoading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : history.length > 0 ? (
+                  history.map((r: any) => (
+                    <TableRow key={r.id}>
+                      <TableCell>{r.paymentDate?.split('T')[0]}</TableCell>
+                      <TableCell>₹{r.amount?.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center text-muted-foreground">
+                      No repayments found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

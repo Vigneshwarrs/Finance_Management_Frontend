@@ -5,6 +5,22 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { apiClient } from '../../api/client';
 import { useToastStore } from '../../store/toastStore';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '../../components/ui/table';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
+} from '../../components/ui/dialog';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import {
+  Form, FormField, FormItem, FormLabel, FormControl, FormMessage,
+} from '../../components/ui/form';
+import { Input } from '../../components/ui/input';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '../../components/ui/select';
+import { Skeleton } from '../../components/ui/skeleton';
 
 const createUserSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -14,8 +30,14 @@ const createUserSchema = z.object({
 
 type CreateUserData = z.infer<typeof createUserSchema>;
 
+function roleBadgeVariant(role: string): 'default' | 'secondary' | 'outline' {
+  if (role === 'Admin') return 'default';
+  if (role === 'Loan_Officer') return 'secondary';
+  return 'outline';
+}
+
 export function UserManagementTable() {
-  const [showForm, setShowForm] = useState(false);
+  const [open, setOpen] = useState(false);
   const qc = useQueryClient();
   const addToast = useToastStore((s) => s.addToast);
 
@@ -24,8 +46,9 @@ export function UserManagementTable() {
     queryFn: () => apiClient.get('/auth/users').then((r) => r.data),
   });
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CreateUserData>({
+  const form = useForm<CreateUserData>({
     resolver: zodResolver(createUserSchema),
+    defaultValues: { username: '', password: '', role: undefined },
   });
 
   const mutation = useMutation({
@@ -33,70 +56,114 @@ export function UserManagementTable() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] });
       addToast('User created', 'success');
-      setShowForm(false);
-      reset();
+      setOpen(false);
+      form.reset();
     },
   });
-
-  if (isLoading) return <p>Loading...</p>;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold">User Management</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
-        >
-          {showForm ? 'Cancel' : 'Add User'}
-        </button>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button>Add User</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Create User</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Admin">Admin</SelectItem>
+                          <SelectItem value="Loan_Officer">Loan Officer</SelectItem>
+                          <SelectItem value="Borrower">Borrower</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  disabled={form.formState.isSubmitting || mutation.isPending}
+                  className="w-full"
+                >
+                  Create User
+                </Button>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {showForm && (
-        <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="max-w-sm space-y-3 bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium mb-1">Username</label>
-            <input id="username" {...register('username')} className="w-full border rounded px-3 py-2 text-sm" />
-            {errors.username && <p role="alert" className="text-red-500 text-xs mt-1">{errors.username.message}</p>}
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
-            <input id="password" type="password" {...register('password')} className="w-full border rounded px-3 py-2 text-sm" />
-            {errors.password && <p role="alert" className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
-          </div>
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium mb-1">Role</label>
-            <select id="role" {...register('role')} className="w-full border rounded px-3 py-2 text-sm">
-              <option value="Admin">Admin</option>
-              <option value="Loan_Officer">Loan Officer</option>
-              <option value="Borrower">Borrower</option>
-            </select>
-            {errors.role && <p role="alert" className="text-red-500 text-xs mt-1">{errors.role.message}</p>}
-          </div>
-          <button type="submit" disabled={isSubmitting || mutation.isPending} className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50">
-            Create User
-          </button>
-        </form>
-      )}
-
-      <table className="w-full text-sm border-collapse">
-        <thead>
-          <tr className="bg-gray-100 dark:bg-gray-700">
-            <th className="text-left p-2">Username</th>
-            <th className="text-left p-2">Role</th>
-            <th className="text-left p-2">Created</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((u: any) => (
-            <tr key={u.id} className="border-b dark:border-gray-700">
-              <td className="p-2">{u.username}</td>
-              <td className="p-2">{u.role}</td>
-              <td className="p-2">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</td>
-            </tr>
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
           ))}
-        </tbody>
-      </table>
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Username</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Created</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((u: any) => (
+              <TableRow key={u.id}>
+                <TableCell>{u.username}</TableCell>
+                <TableCell>
+                  <Badge variant={roleBadgeVariant(u.role)}>{u.role}</Badge>
+                </TableCell>
+                <TableCell>{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }

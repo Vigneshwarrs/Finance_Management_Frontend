@@ -17,6 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Borrower = {
   id: string;
@@ -27,13 +29,7 @@ type Borrower = {
   };
 };
 
-export function BorrowerList() {
-  const { data: borrowers = [], isLoading } = useQuery({
-    queryKey: ["borrowers"],
-    queryFn: () => apiClient.get("/borrowers").then((r) => r.data),
-  });
-
- const columns: ColumnDef<Borrower>[] = [
+const columns: ColumnDef<Borrower>[] = [
   {
     accessorKey: "name",
     header: "Name",
@@ -45,10 +41,7 @@ export function BorrowerList() {
   {
     id: "email",
     header: "Email",
-    cell: ({ row }) => {
-      const email = row.original.contact?.email || "-";
-      return <span>{email}</span>;
-    },
+    cell: ({ row }) => <span>{row.original.contact?.email ?? "-"}</span>,
   },
   {
     id: "actions",
@@ -72,28 +65,45 @@ export function BorrowerList() {
   },
 ];
 
+export function BorrowerList() {
+  const { data: borrowers = [], isLoading } = useQuery({
+    queryKey: ["borrowers"],
+    queryFn: () => apiClient.get("/borrowers").then((r) => r.data),
+  });
+
   const table = useReactTable({
     data: borrowers,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-7 w-32" />
+          <Skeleton className="h-9 w-28" />
+        </div>
+        <div className="border rounded-md">
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Borrowers</h1>
-        <Link
-          to="/borrowers/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
-        >
-          Add Borrower
-        </Link>
+        <Button asChild>
+          <Link to="/borrowers/new">Add Borrower</Link>
+        </Button>
       </div>
 
-      {/* Table */}
       <div className="border rounded-md">
         <Table>
           <TableHeader>
@@ -118,8 +128,7 @@ export function BorrowerList() {
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
                       {flexRender(
-                        cell.column.columnDef.cell ??
-                          cell.column.columnDef.accessorKey,
+                        cell.column.columnDef.cell,
                         cell.getContext()
                       )}
                     </TableCell>

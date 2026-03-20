@@ -2,6 +2,26 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiClient } from '../../api/client';
 import { useToastStore } from '../../store/toastStore';
+import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../../components/ui/table';
+import { Badge } from '../../components/ui/badge';
+import { Input } from '../../components/ui/input';
+import { Button } from '../../components/ui/button';
+import { Skeleton } from '../../components/ui/skeleton';
+
+function statusVariant(status: string): 'default' | 'destructive' | 'secondary' | 'outline' {
+  if (status === 'sent') return 'default';
+  if (status === 'failed') return 'destructive';
+  if (status === 'pending') return 'secondary';
+  return 'outline';
+}
 
 export function NotificationLog() {
   const [borrowerId, setBorrowerId] = useState('');
@@ -21,61 +41,67 @@ export function NotificationLog() {
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-bold">Notifications</h1>
-
-      <div className="flex gap-2">
-        <input
-          value={borrowerId}
-          onChange={(e) => setBorrowerId(e.target.value)}
-          placeholder="Borrower ID"
-          className="border rounded px-3 py-2 text-sm flex-1"
-          aria-label="Borrower ID"
-        />
-        <button
-          onClick={() => setQueried(borrowerId)}
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm"
-        >
-          Load
-        </button>
-      </div>
-
-      {queried && (
-        <div className="flex gap-4 items-center">
-          <span className="text-sm font-medium">Preferences:</span>
-          <button onClick={() => prefMutation.mutate(['email', 'sms'])} className="text-sm text-blue-600 hover:underline">
-            Enable All
-          </button>
-          <button onClick={() => prefMutation.mutate([])} className="text-sm text-red-500 hover:underline">
-            Disable All
-          </button>
+    <Card>
+      <CardHeader>
+        <CardTitle>Notifications</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex gap-2">
+          <Input
+            value={borrowerId}
+            onChange={(e) => setBorrowerId(e.target.value)}
+            placeholder="Borrower ID"
+            aria-label="Borrower ID"
+            className="flex-1"
+          />
+          <Button onClick={() => setQueried(borrowerId)}>Load</Button>
         </div>
-      )}
 
-      {isLoading && <p>Loading...</p>}
+        {queried && (
+          <div className="flex gap-4 items-center">
+            <span className="text-sm font-medium">Preferences:</span>
+            <Button variant="link" onClick={() => prefMutation.mutate(['email', 'sms'])}>
+              Enable All
+            </Button>
+            <Button variant="link" onClick={() => prefMutation.mutate([])}>
+              Disable All
+            </Button>
+          </div>
+        )}
 
-      {notifications.length > 0 && (
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gray-100 dark:bg-gray-700">
-              <th className="text-left p-2">Type</th>
-              <th className="text-left p-2">Channel</th>
-              <th className="text-left p-2">Status</th>
-              <th className="text-left p-2">Sent At</th>
-            </tr>
-          </thead>
-          <tbody>
-            {notifications.map((n: any) => (
-              <tr key={n.id} className="border-b dark:border-gray-700">
-                <td className="p-2">{n.type}</td>
-                <td className="p-2">{n.channel}</td>
-                <td className="p-2">{n.status}</td>
-                <td className="p-2">{n.sentAt ? new Date(n.sentAt).toLocaleString() : '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+        {isLoading && (
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        )}
+
+        {!isLoading && notifications.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Type</TableHead>
+                <TableHead>Channel</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Sent At</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {notifications.map((n: any) => (
+                <TableRow key={n.id}>
+                  <TableCell>{n.type}</TableCell>
+                  <TableCell>{n.channel}</TableCell>
+                  <TableCell>
+                    <Badge variant={statusVariant(n.status)}>{n.status}</Badge>
+                  </TableCell>
+                  <TableCell>{n.sentAt ? new Date(n.sentAt).toLocaleString() : '—'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
   );
 }
